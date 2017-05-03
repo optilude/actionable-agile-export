@@ -2,6 +2,9 @@ import itertools
 import datetime
 import dateutil.parser
 import dateutil.tz
+import sys
+from jira import JIRA, JIRAError
+from termcolor import colored
 
 def to_datetime(date):
     """Turn a date into a datetime at midnight.
@@ -184,7 +187,24 @@ class QueryManager(object):
         if verbose:
             print "Fetching issues with query:", queryString
 
-        issues = self.jira.search_issues(queryString, expand='changelog', maxResults=self.settings['max_results'])
+        #JIRA seems to only return 50 matches, so this respects pagination as it pulls all issues from the query
+        try:
+            issues = self.jira.search_issues(queryString, expand='changelog', maxResults=10)
+            total_num_issues = issues.total
+            issues_so_far = len(issues)
+            while issues_so_far < total_num_issues:
+                issues = issues + self.jira.search_issues(queryString, expand='changelog', maxResults=100, startAt= issues_so_far)
+                issues_so_far = len(issues)
+                if verbose:
+                    print "Fetched {} of {}".format(len(issues),total_num_issues)
+        except JIRAError as e:
+            print colored("query error with: {}\n{}".format(queryString,e), 'red')
+            return []
+
+
+        
+        
+        assert(len(issues) == total_num_issues, "{} issues retrieved: expecting {}".format(len(issues),total_num_issues));
 
         if verbose:
             print "Fetched", len(issues), "issues"
