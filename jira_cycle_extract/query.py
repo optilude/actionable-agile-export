@@ -201,11 +201,6 @@ class QueryManager(object):
             print colored("query error with: {}\n{}".format(queryString,e), 'red')
             return []
 
-
-        
-        
-        assert(len(issues) == total_num_issues, "{} issues retrieved: expecting {}".format(len(issues),total_num_issues));
-
         if verbose:
             print "Fetched", len(issues), "issues"
 
